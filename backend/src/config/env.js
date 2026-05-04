@@ -6,11 +6,15 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const removeTrailingSlash = (value = '') => value.replace(/\/+$/, '');
+const parseOrigins = (value = '') => value
+  .split(',')
+  .map((entry) => entry.trim())
+  .filter(Boolean);
 
 export const env = {
   port: Number(process.env.PORT || 3000),
   upstreamApiUrl: removeTrailingSlash(process.env.UPSTREAM_API_URL || 'http://localhost:8000/api'),
-  allowedOrigin: process.env.ALLOWED_ORIGIN || 'http://localhost:5173',
+  allowedOrigins: parseOrigins(process.env.ALLOWED_ORIGIN || 'http://localhost:5174,http://localhost:5173'),
   db: {
     connection: process.env.DB_CONNECTION || 'sqlsrv',
     host: process.env.DB_HOST || '127.0.0.1',

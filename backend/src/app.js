@@ -21,6 +21,24 @@ import { env } from './config/env.js';
 
 const app = express();
 
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow server-to-server requests and health checks without an Origin header.
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (env.allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`Origin not allowed by CORS: ${origin}`));
+  },
+  credentials: true,
+};
+
 const ensureDemoUser = async () => {
   const existingUser = await User.findOne({ where: { username: env.auth.demoUsername } });
   if (existingUser) return;
@@ -36,7 +54,7 @@ const ensureDemoUser = async () => {
   console.log(`Demo user created: ${env.auth.demoUsername}`);
 };
 
-app.use(cors({ origin: env.allowedOrigin, credentials: true }));
+app.use(cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json({ limit: '25mb' }));
 

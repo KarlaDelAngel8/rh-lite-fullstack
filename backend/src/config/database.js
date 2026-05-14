@@ -4,21 +4,53 @@
 import { Sequelize } from 'sequelize';
 import { env } from './env.js';
 
-const sequelize = new Sequelize({
-  host: env.db.host,
-  port: env.db.port,
-  database: env.db.database,
-  username: env.db.username,
-  password: env.db.password,
-  dialect: 'mssql',
-  logging: false,
-  dialectOptions: {
-    requestTimeout: 30000,
-    options: {
-      encrypt: false,
-      trustServerCertificate: true,
-    },
-  },
-});
+const isPostgres = ['postgres', 'postgresql'].includes(env.db.connection);
+
+const sequelize = env.db.url
+  ? new Sequelize(env.db.url, {
+      dialect: isPostgres ? 'postgres' : 'mssql',
+      logging: false,
+      dialectOptions: isPostgres
+        ? {
+            ssl: env.db.ssl
+              ? {
+                  require: true,
+                  rejectUnauthorized: false,
+                }
+              : false,
+          }
+        : {
+            requestTimeout: 30000,
+            options: {
+              encrypt: env.db.encrypt,
+              trustServerCertificate: env.db.trustServerCertificate,
+            },
+          },
+    })
+  : new Sequelize({
+      host: env.db.host,
+      port: env.db.port,
+      database: env.db.database,
+      username: env.db.username,
+      password: env.db.password,
+      dialect: isPostgres ? 'postgres' : 'mssql',
+      logging: false,
+      dialectOptions: isPostgres
+        ? {
+            ssl: env.db.ssl
+              ? {
+                  require: true,
+                  rejectUnauthorized: false,
+                }
+              : false,
+          }
+        : {
+            requestTimeout: 30000,
+            options: {
+              encrypt: env.db.encrypt,
+              trustServerCertificate: env.db.trustServerCertificate,
+            },
+          },
+    });
 
 export default sequelize;

@@ -6,3 +6,22 @@ services:
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: ALLOWED_ORIGIN
+        sync: false
+      - key: UPSTREAM_API_URL
+        value: http://localhost:8000/api
+      - key: DB_CONNECTION
+        value: postgres
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL
+        value: true
+      - key: AUTH_TOKEN_TTL_MINUTES
+        value: 480
+      - key: AUTH_DEMO_USERNAME
+        value: admin
+      - key: AUTH_DEMO_PASSWORD
+        sync: false

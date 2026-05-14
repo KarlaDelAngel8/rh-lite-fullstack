@@ -118,6 +118,8 @@ DB_PORT=1433
 DB_DATABASE=rh_system_init
 DB_USERNAME=sa
 DB_PASSWORD=tu_contraseña
+DB_ENCRYPT=false
+DB_TRUST_SERVER_CERTIFICATE=true
 
 AUTH_TOKEN_TTL_MINUTES=480
 AUTH_DEMO_USERNAME=admin
@@ -203,8 +205,9 @@ Todos los catálogos cuentan con: listado paginado, búsqueda, alta, edición y 
 ## API — Endpoints principales
 
 ```
-POST   /api/auth/login
-POST   /api/auth/logout
+POST   /api/login
+POST   /api/logout
+GET    /api/session-status
 
 GET    /api/dashboard/counts
 GET    /api/dashboard/metrics
@@ -236,7 +239,114 @@ DELETE /api/areas/:id
 | `DB_DATABASE` | Nombre de la base de datos | `rh_system` |
 | `DB_USERNAME` | Usuario de la base de datos | `sa` |
 | `DB_PASSWORD` | Contraseña de la base de datos | — |
+| `DB_ENCRYPT` | Activa cifrado TLS para SQL Server remoto | `false` |
+| `DB_TRUST_SERVER_CERTIFICATE` | Acepta certificado autofirmado del servidor SQL | `true` |
 | `AUTH_TOKEN_TTL_MINUTES` | Duración del token en minutos | `480` |
 | `AUTH_DEMO_USERNAME` | Usuario de acceso demo | `admin` |
 | `AUTH_DEMO_PASSWORD` | Contraseña de acceso demo | `Admin123*` |
+
+---
+
+## Despliegue en producción
+
+Para que el login funcione en `https://rh-lite-fullstack.vercel.app`, el frontend y el backend deben estar publicados por separado:
+
+- **Frontend** en Vercel
+- **Backend** en Render
+- **Base de datos SQL Server** accesible desde Internet para Render
+
+### 1. Subir el backend a Render
+
+Este repositorio ya incluye `render.yaml`, así que puedes crear el servicio desde GitHub usando **Blueprint** o un servicio web normal apuntando a `backend/`.
+
+Variables mínimas del backend en Render:
+
+```env
+ALLOWED_ORIGIN=https://rh-lite-fullstack.vercel.app
+DB_CONNECTION=sqlsrv
+DB_HOST=TU_HOST_SQL
+DB_PORT=1433
+DB_DATABASE=TU_BASE
+DB_USERNAME=TU_USUARIO
+DB_PASSWORD=TU_PASSWORD
+DB_ENCRYPT=true|false
+DB_TRUST_SERVER_CERTIFICATE=true|false
+AUTH_TOKEN_TTL_MINUTES=480
+AUTH_DEMO_USERNAME=admin
+AUTH_DEMO_PASSWORD=Admin123*
+```
+
+Notas importantes:
+
+- Si tu SQL Server sigue en tu computadora local (`127.0.0.1` o Laragon), **Render no podrá conectarse**.
+- Necesitas un SQL Server público o una instancia remota accesible desde Internet.
+- Si usas Azure SQL, normalmente `DB_ENCRYPT=true` y `DB_TRUST_SERVER_CERTIFICATE=false`.
+- Si usas Supabase, cambia a `DB_CONNECTION=postgres` y usa `DATABASE_URL`.
+
+Cuando Render termine, valida estas rutas:
+
+```text
+GET  https://TU-BACKEND.onrender.com/health
+POST https://TU-BACKEND.onrender.com/api/login
+```
+
+### 2. Configurar el frontend en Vercel
+
+En Vercel agrega esta variable de entorno del proyecto:
+
+```env
+VITE_API_URL=https://TU-BACKEND.onrender.com/api
+```
+
+Luego haz un nuevo deploy del frontend.
+
+### 3. Verificación final
+
+Después del redeploy:
+
+- Abre `https://rh-lite-fullstack.vercel.app/login`
+- Inicia sesión con el usuario configurado en el backend
+- Si ves error CORS, revisa `ALLOWED_ORIGIN`
+- Si ves error `500`, revisa la conexión de Render a SQL Server
+
+---
+
+## Conectar Supabase
+
+Supabase **no usa SQL Server**, usa PostgreSQL. Este proyecto ya puede conectarse a ambos motores por Sequelize, pero para Supabase debes cambiar las variables del backend.
+
+### Variables para backend con Supabase
+
+En Render configura:
+
+```env
+ALLOWED_ORIGIN=https://rh-lite-fullstack.vercel.app
+DB_CONNECTION=postgres
+DATABASE_URL=postgresql://postgres:TU_PASSWORD@db.TU-PROYECTO.supabase.co:5432/postgres
+DB_SSL=true
+AUTH_TOKEN_TTL_MINUTES=480
+AUTH_DEMO_USERNAME=admin
+AUTH_DEMO_PASSWORD=Admin123*
+```
+
+### Dónde sacar `DATABASE_URL` en Supabase
+
+En tu proyecto de Supabase entra a:
+
+- `Project Settings`
+- `Database`
+- `Connection string`
+
+Usa la cadena tipo `URI` o `SQLAlchemy` y toma el formato PostgreSQL.
+
+### Consideración importante
+
+Si vienes de SQL Server, Supabase estará vacío. Al arrancar, Sequelize creará las tablas por `sequelize.sync()`, pero tus datos anteriores no se migran solos.
+
+Para validar la conexión:
+
+```text
+GET https://TU-BACKEND.onrender.com/health
+POST https://TU-BACKEND.onrender.com/api/login
+```
 

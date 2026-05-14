@@ -15,7 +15,7 @@ const sequelize = env.db.url
             ssl: env.db.ssl
               ? {
                   require: true,
-                  rejectUnauthorized: false,
+                  rejectUnauthorized: env.db.sslRejectUnauthorized,
                 }
               : false,
           }
@@ -40,7 +40,7 @@ const sequelize = env.db.url
             ssl: env.db.ssl
               ? {
                   require: true,
-                  rejectUnauthorized: false,
+                  rejectUnauthorized: env.db.sslRejectUnauthorized,
                 }
               : false,
           }

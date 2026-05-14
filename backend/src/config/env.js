@@ -26,6 +26,7 @@ export const env = {
     encrypt: process.env.DB_ENCRYPT === 'true',
     trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE !== 'false',
     ssl: process.env.DB_SSL !== 'false',
+    sslRejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true',
   },
   auth: {
     tokenTtlMinutes: Number(process.env.AUTH_TOKEN_TTL_MINUTES || 480),
